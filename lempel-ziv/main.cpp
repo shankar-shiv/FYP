@@ -1,9 +1,31 @@
 #include <bits/stdc++.h>
 using namespace std;
+
+vector<int> encoding(string s1);
+void decoding(vector<int> op);
+
+int main()
+{
+    string s = "WYS*WYGWYS*WYSWYSG";
+    vector<int> output_code = encoding(s);
+
+    cout << "Output Codes are: ";
+
+    for (int i = 0; i < output_code.size(); i++)
+    {
+        cout << output_code[i] << " ";
+    }
+
+    cout << endl;
+
+    decoding(output_code);
+}
+
 vector<int> encoding(string s1)
 {
     cout << "Encoding\n";
     unordered_map<string, int> table;
+
     for (int i = 0; i <= 255; i++)
     {
         string ch = "";
@@ -15,7 +37,9 @@ vector<int> encoding(string s1)
     p += s1[0];
     int code = 256;
     vector<int> output_code;
+
     cout << "String\tOutput_Code\tAddition\n";
+
     for (int i = 0; i < s1.length(); i++)
     {
         if (i != s1.length() - 1)
@@ -35,6 +59,7 @@ vector<int> encoding(string s1)
         }
         c = "";
     }
+
     cout << p << "\t" << table[p] << endl;
     output_code.push_back(table[p]);
     return output_code;
@@ -75,17 +100,4 @@ void decoding(vector<int> op)
         count++;
         old = n;
     }
-}
-int main()
-{
-
-    string s = "WYS*WYGWYS*WYSWYSG";
-    vector<int> output_code = encoding(s);
-    cout << "Output Codes are: ";
-    for (int i = 0; i < output_code.size(); i++)
-    {
-        cout << output_code[i] << " ";
-    }
-    cout << endl;
-    decoding(output_code);
 }
