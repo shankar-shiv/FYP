@@ -1,0 +1,2 @@
+class LempelZiv:
+    pass
