@@ -9,7 +9,7 @@
 #include <string.h>
 #include <sys/stat.h>
 
-#include "/home/shankar/CAPSTONE/Capstone/.libraries/lz4-1.9.4/lib/lz4file.h"
+#include "../.libraries/lz4-1.9.4/lib/lz4file.h"
 
 #define CHUNK_SIZE (16 * 1024)
 
