@@ -15,9 +15,10 @@
 
 int main()
 {
+    double input_data[] = {0.9779411554336548, 0.9264705777168274, 0.6813725233078003, 0.0, 0.0, 0.0, 0.0, 0.0};
 
-    uint8_t input_data[] = "This is a sample input data for compression.";
     size_t input_data_size = sizeof(input_data) - 1; // Subtract 1 to exclude the null terminator
+    debug(input_data_size);
 
     // Allocate a heatshrink_encoder
     heatshrink_encoder *hse = heatshrink_encoder_alloc(WINDOW_BITS, LOOKAHEAD_BITS);
@@ -29,7 +30,7 @@ int main()
     }
 
     // An array to hold the compressed data
-    uint8_t compressed_data[BUFFER_SIZE];
+    double compressed_data[BUFFER_SIZE];
 
     // The offset in the input data where we are currently reading from
     size_t input_offset = 0;
@@ -117,7 +118,7 @@ int main()
     printf("Compressed Data (%zu bytes):\n", output_offset);
     for (size_t i = 0; i < output_offset; i++)
     {
-        printf("%02X ", compressed_data[i]);
+        printf("%.16f ", compressed_data[i]);
     }
     printf("\n");
 
@@ -130,7 +131,9 @@ int main()
 
     // Sample compressed data only for testing
     // uint8_t compressed_data[] = {0xAA, 0x5A, 0x2D, 0x37, 0x39, 0x00, 0x00, 0x82, 0xB0, 0xC8, 0x2E, 0x76, 0x1B, 0x6D, 0xC2, 0xD9, 0x65, 0x90, 0x5A, 0x6D, 0xD7, 0x0B, 0xAD, 0xD2, 0x41, 0x64, 0xB0, 0xDD, 0x2C, 0x32, 0x0B, 0x35, 0xBE, 0xE5, 0x20, 0xB1, 0xDB, 0xED, 0xB7, 0x0B, 0x95, 0x96, 0xE7, 0x73, 0xB4, 0xDB, 0xED, 0xD2, 0xE0};
-    uint8_t compressed_data_new[output_offset];
+    debug(output_offset);
+
+    double compressed_data_new[output_offset];
 
     for (size_t i = 0; i < output_offset; i++)
     {
@@ -147,7 +150,7 @@ int main()
         return 1;
     }
 
-    uint8_t output_data[BUFFER_SIZE];
+    double output_data[BUFFER_SIZE];
     size_t input_offset_decompressed = 0;
     size_t output_offset_decompressed = 0;
 
@@ -180,18 +183,32 @@ int main()
 
     // Finish decoding
     HSD_finish_res finish_res_decompressed = heatshrink_decoder_finish(hsd);
+    debug(finish_res_decompressed);
 
-    if (finish_res_decompressed != HSDR_FINISH_DONE)
+    // if (finish_res_decompressed != HSDR_FINISH_DONE)
+    // {
+    //     fprintf(stderr, "Failed to finish decoding\n");
+    //     return 1;
+    // }
+
+    if (finish_res_decompressed > 0)
     {
-        fprintf(stderr, "Failed to finish decoding\n");
-        return 1;
+        size_t output_bytes_free = BUFFER_SIZE - output_offset_decompressed; // Define output_bytes_free here
+        // More output data to collect
+        HSD_poll_res poll_res = heatshrink_decoder_poll(hsd, output_data + output_offset_decompressed, output_bytes_free, &output_size);
+        if (poll_res < 0)
+        {
+            fprintf(stderr, "Failed to poll data from encoder\n");
+            return 1;
+        }
+        output_offset_decompressed += output_size;
     }
 
     // Output the decoded data
     printf("Decoded Data (%zu bytes):\n", output_offset_decompressed);
     for (size_t i = 0; i < output_offset_decompressed; i++)
     {
-        printf("%c", output_data[i]);
+        printf("%f,", output_data[i]);
     }
     printf("\n");
 
