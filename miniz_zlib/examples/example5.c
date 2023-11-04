@@ -19,22 +19,22 @@ typedef unsigned char uint8;
 typedef unsigned short uint16;
 typedef unsigned int uint;
 
-#define my_max(a,b) (((a) > (b)) ? (a) : (b))
-#define my_min(a,b) (((a) < (b)) ? (a) : (b))
+#define my_max(a, b) (((a) > (b)) ? (a) : (b))
+#define my_min(a, b) (((a) < (b)) ? (a) : (b))
 
 // IN_BUF_SIZE is the size of the file read buffer.
 // IN_BUF_SIZE must be >= 1
-#define IN_BUF_SIZE (1024*512)
+#define IN_BUF_SIZE (1024 * 512)
 static uint8 s_inbuf[IN_BUF_SIZE];
 
 // COMP_OUT_BUF_SIZE is the size of the output buffer used during compression.
 // COMP_OUT_BUF_SIZE must be >= 1 and <= OUT_BUF_SIZE
-#define COMP_OUT_BUF_SIZE (1024*512)
+#define COMP_OUT_BUF_SIZE (1024 * 512)
 
 // OUT_BUF_SIZE is the size of the output buffer used during decompression.
 // OUT_BUF_SIZE must be a power of 2 >= TINFL_LZ_DICT_SIZE (because the low-level decompressor not only writes, but reads from the output buffer as it decompresses)
-//#define OUT_BUF_SIZE (TINFL_LZ_DICT_SIZE)
-#define OUT_BUF_SIZE (1024*512)
+// #define OUT_BUF_SIZE (TINFL_LZ_DICT_SIZE)
+#define OUT_BUF_SIZE (1024 * 512)
 static uint8 s_outbuf[OUT_BUF_SIZE];
 
 // tdefl_compressor contains all the state needed by the low-level compressor so it's a pretty big struct (~300k).
@@ -77,21 +77,21 @@ int main(int argc, char *argv[])
    {
       switch (argv[p][1])
       {
-         case 'l':
+      case 'l':
+      {
+         level = atoi(&argv[1][2]);
+         if ((level < 0) || (level > 10))
          {
-            level = atoi(&argv[1][2]);
-            if ((level < 0) || (level > 10))
-            {
-               printf("Invalid level!\n");
-               return EXIT_FAILURE;
-            }
-            break;
-         }
-         default:
-         {
-            printf("Invalid option: %s\n", argv[p]);
+            printf("Invalid level!\n");
             return EXIT_FAILURE;
          }
+         break;
+      }
+      default:
+      {
+         printf("Invalid option: %s\n", argv[p]);
+         return EXIT_FAILURE;
+      }
       }
       p++;
    }
@@ -154,7 +154,7 @@ int main(int argc, char *argv[])
    if ((pMode[0] == 'c') || (pMode[0] == 'C'))
    {
       // The number of dictionary probes to use at each compression level (0-10). 0=implies fastest/minimal possible probing.
-      static const mz_uint s_tdefl_num_probes[11] = { 0, 1, 6, 32,  16, 32, 128, 256,  512, 768, 1500 };
+      static const mz_uint s_tdefl_num_probes[11] = {0, 1, 6, 32, 16, 32, 128, 256, 512, 768, 1500};
 
       tdefl_status status;
       uint infile_remaining = infile_size;
@@ -175,7 +175,7 @@ int main(int argc, char *argv[])
       avail_out = COMP_OUT_BUF_SIZE;
 
       // Compression.
-      for ( ; ; )
+      for (;;)
       {
          size_t in_bytes, out_bytes;
 
@@ -194,7 +194,7 @@ int main(int argc, char *argv[])
             avail_in = n;
 
             infile_remaining -= n;
-            //printf("Input bytes remaining: %u\n", infile_remaining);
+            // printf("Input bytes remaining: %u\n", infile_remaining);
          }
 
          in_bytes = avail_in;
@@ -244,7 +244,7 @@ int main(int argc, char *argv[])
       tinfl_decompressor inflator;
       tinfl_init(&inflator);
 
-      for ( ; ; )
+      for (;;)
       {
          size_t in_bytes, out_bytes;
          tinfl_status status;

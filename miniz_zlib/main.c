@@ -1,6 +1,6 @@
-// example5.c - Demonstrates how to use miniz.c's low-level tdefl_compress() and tinfl_inflate() API's for simple file to file compression/decompression.
+// Demonstrates how to use miniz.c's low-level tdefl_compress() and tinfl_inflate() API's for simple file to file compression/decompression.
 // The low-level API's are the fastest, make no use of dynamic memory allocation, and are the most flexible functions exposed by miniz.c.
-// Public domain, April 11 2012, Rich Geldreich, richgel99@gmail.com. See "unlicense" statement at the end of tinfl.c.
+// See "unlicense" statement at the end of tinfl.c.
 // For simplicity, this example is limited to files smaller than 4GB, but this is not a limitation of miniz.c.
 
 // Purposely disable a whole bunch of stuff this low-level example doesn't use.
@@ -8,7 +8,7 @@
 #define MINIZ_NO_ARCHIVE_APIS
 #define MINIZ_NO_TIME
 #define MINIZ_NO_ZLIB_APIS
-#define MINIZ_NO_MALLOC
+#define MINIZ_NO_MALLOC // disable malloc(), free(), etc.
 #include "miniz.h"
 
 // Now include stdio.h because this test uses fopen(), etc. (but we still don't want miniz.c's stdio stuff, for testing).
@@ -19,26 +19,26 @@ typedef unsigned char uint8;
 typedef unsigned short uint16;
 typedef unsigned int uint;
 
-#define my_max(a,b) (((a) > (b)) ? (a) : (b))
-#define my_min(a,b) (((a) < (b)) ? (a) : (b))
+#define my_max(a, b) (((a) > (b)) ? (a) : (b))
+#define my_min(a, b) (((a) < (b)) ? (a) : (b))
 
 // IN_BUF_SIZE is the size of the file read buffer.
 // IN_BUF_SIZE must be >= 1
-#define IN_BUF_SIZE (1024*512)
+#define IN_BUF_SIZE (1024 * 512)
 static uint8 s_inbuf[IN_BUF_SIZE];
 
 // COMP_OUT_BUF_SIZE is the size of the output buffer used during compression.
 // COMP_OUT_BUF_SIZE must be >= 1 and <= OUT_BUF_SIZE
-#define COMP_OUT_BUF_SIZE (1024*512)
+#define COMP_OUT_BUF_SIZE (1024 * 512)
 
 // OUT_BUF_SIZE is the size of the output buffer used during decompression.
 // OUT_BUF_SIZE must be a power of 2 >= TINFL_LZ_DICT_SIZE (because the low-level decompressor not only writes, but reads from the output buffer as it decompresses)
-//#define OUT_BUF_SIZE (TINFL_LZ_DICT_SIZE)
-#define OUT_BUF_SIZE (1024*512)
+// #define OUT_BUF_SIZE (TINFL_LZ_DICT_SIZE)
+#define OUT_BUF_SIZE (1024 * 512)
 static uint8 s_outbuf[OUT_BUF_SIZE];
 
 // tdefl_compressor contains all the state needed by the low-level compressor so it's a pretty big struct (~300k).
-// This example makes it a global vs. putting it on the stack, of course in real-world usage you'll probably malloc() or new it.
+// This example makes it a global vs. putting it on the stack, of course in real-world usage you'll probably malloc() or new it but not for embedded systems
 tdefl_compressor g_deflator;
 
 int main(int argc, char *argv[])
@@ -46,11 +46,14 @@ int main(int argc, char *argv[])
    const char *pMode;
    FILE *pInfile, *pOutfile;
    uint infile_size;
+
    int level = 9;
    int p = 1;
+
    const char *pSrc_filename;
    const char *pDst_filename;
    const void *next_in = s_inbuf;
+
    size_t avail_in = 0;
    void *next_out = s_outbuf;
    size_t avail_out = OUT_BUF_SIZE;
@@ -77,21 +80,21 @@ int main(int argc, char *argv[])
    {
       switch (argv[p][1])
       {
-         case 'l':
+      case 'l':
+      {
+         level = atoi(&argv[1][2]);
+         if ((level < 0) || (level > 10))
          {
-            level = atoi(&argv[1][2]);
-            if ((level < 0) || (level > 10))
-            {
-               printf("Invalid level!\n");
-               return EXIT_FAILURE;
-            }
-            break;
-         }
-         default:
-         {
-            printf("Invalid option: %s\n", argv[p]);
+            printf("Invalid level!\n");
             return EXIT_FAILURE;
          }
+         break;
+      }
+      default:
+      {
+         printf("Invalid option: %s\n", argv[p]);
+         return EXIT_FAILURE;
+      }
       }
       p++;
    }
@@ -154,7 +157,7 @@ int main(int argc, char *argv[])
    if ((pMode[0] == 'c') || (pMode[0] == 'C'))
    {
       // The number of dictionary probes to use at each compression level (0-10). 0=implies fastest/minimal possible probing.
-      static const mz_uint s_tdefl_num_probes[11] = { 0, 1, 6, 32,  16, 32, 128, 256,  512, 768, 1500 };
+      static const mz_uint s_tdefl_num_probes[11] = {0, 1, 6, 32, 16, 32, 128, 256, 512, 768, 1500};
 
       tdefl_status status;
       uint infile_remaining = infile_size;
@@ -175,7 +178,7 @@ int main(int argc, char *argv[])
       avail_out = COMP_OUT_BUF_SIZE;
 
       // Compression.
-      for ( ; ; )
+      for (;;)
       {
          size_t in_bytes, out_bytes;
 
@@ -194,7 +197,7 @@ int main(int argc, char *argv[])
             avail_in = n;
 
             infile_remaining -= n;
-            //printf("Input bytes remaining: %u\n", infile_remaining);
+            // printf("Input bytes remaining: %u\n", infile_remaining);
          }
 
          in_bytes = avail_in;
@@ -244,7 +247,7 @@ int main(int argc, char *argv[])
       tinfl_decompressor inflator;
       tinfl_init(&inflator);
 
-      for ( ; ; )
+      for (;;)
       {
          size_t in_bytes, out_bytes;
          tinfl_status status;
