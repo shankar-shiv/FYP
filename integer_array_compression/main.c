@@ -3,10 +3,10 @@
 
 int main()
 {
-
     // Original readings
     int8_t readings[11] = {5, 6, 6, 6, 10, 12, 12, 10, 10, 10, -36};
     uint8_t readings_nBytes = 11;
+
     // Decoded readings
     int8_t readings_decoded[11];
     uint8_t readings_decoded_nBytes = 0;
