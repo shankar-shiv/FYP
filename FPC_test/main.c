@@ -4,10 +4,6 @@
 #include <string.h>
 #include <stdio.h>
 
-// this code on esp32 takes 613284 ram.
-// RAM:   [==========]  187.2% (used 613280 bytes from 327680 bytes)
-// Flash: [==        ]  20.4% (used 267493 bytes from 1310720 bytes)
-
 #define DOUBLE_COUNT (1U << 12U)                 // 4096
 #define OUTPUT_SIZE (FPC_UPPER_BOUND(1U << 12U)) // 34816
 
