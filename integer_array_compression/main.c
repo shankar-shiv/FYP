@@ -32,10 +32,10 @@ int main()
     printf("\n");
 
     // print size before compression
-    printf("before compression size is %ld\n", sizeof(readings));
+    printf("before compression size is %ld bytes \n", sizeof(readings));
 
     // print size after compression
-    printf("after compression size is %ld\n", sizeof(bitBuffer));
+    printf("after compression size is %ld bytes \n", sizeof(bitBuffer));
 
     return 0;
 }
