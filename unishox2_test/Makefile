@@ -13,21 +13,7 @@
 # FLAGS := $(CFLAGS) $(LDFLAGS) $(MOREFLAGS)
 # # FLAGS    := $(CPPFLAGS) $(CFLAGS) $(LDFLAGS) $(MOREFLAGS)
 
-# OBJFILES = main.o miniz.o
-# TARGET = main
-
-# default: all
-# all: main
-
-# main: $(OBJFILES)
-# 	$(CC) $(FLAGS) -o $(TARGET) $(OBJFILES)
-
-# # fileCompress: fileCompress.c $(LZ4DIR)/liblz4.a
-# # 	$(CC) $(FLAGS) $^ -o $@$(EXT)
-
-# clean:
-# 	rm -f $(OBJFILES) $(TARGET)
-# 	@echo Cleaning completed
+# --------------------------------------------------------------------------------------------------
 
 # Compiler and flags
 CC = gcc
@@ -36,7 +22,7 @@ LDFLAGS =
 MOREFLAGS =
 
 # Source files and output target
-SRCFILES = main.c lzf_c.c lzf_d.c
+SRCFILES = main.c unishox2.c
 OBJFILES = $(SRCFILES:.c=.o)
 TARGET = main
 
@@ -51,8 +37,39 @@ $(TARGET): $(OBJFILES)
 %.o: %.c
 	$(CC) -c $(CFLAGS) -o $@ $<
 
+
 clean:
 	rm -f $(OBJFILES) $(TARGET)
 	@echo Cleaning completed
 
 .PHONY: default all clean
+
+# Second version of makefile
+
+# CC = gcc
+# CXX = g++
+# CFLAGS = -O3 -std=c11 -Wall
+# CXXFLAGS = -O3 -std=c++11 -Wall
+# LDFLAGS =
+
+# C_SRC = main.c
+# CXX_SRC = unishox2.cpp
+
+# C_OBJ = $(C_SRC:.c=.o)
+# CXX_OBJ = $(CXX_SRC:.cpp=.o)
+
+# TARGET = main
+
+# all: $(TARGET)
+
+# $(TARGET): $(C_OBJ) $(CXX_OBJ)
+# 	$(CXX) -o $(TARGET) $(C_OBJ) $(CXX_OBJ) $(LDFLAGS)
+
+# %.o: %.c
+# 	$(CC) $(CFLAGS) -c $< -o $@
+
+# %.o: %.cpp
+# 	$(CXX) $(CXXFLAGS) -c $< -o $@
+
+# clean:
+# 	rm -f $(C_OBJ) $(CXX_OBJ) $(TARGET)

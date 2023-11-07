@@ -69,10 +69,10 @@ int main()
     }
 
     // print the decompressed data
-    for (int i = 0; i < MAX_DATA_SIZE; i++)
-    {
-        printf("%c", decompressed_data[i]);
-    }
+    // for (int i = 0; i < MAX_DATA_SIZE; i++)
+    // {
+    //     printf("%c", decompressed_data[i]);
+    // }
 
     // print number of input data bytes
     printf("\n\nNumber of input data bytes: %d", input_data_size);
