@@ -13,7 +13,7 @@ CFLAGS   += -g -std=c11 -Wall -Wextra -Wundef -Wshadow -Wcast-align -Wstrict-pro
 FLAGS    := $(CFLAGS) $(LDFLAGS) $(MOREFLAGS)
 # FLAGS    := $(CPPFLAGS) $(CFLAGS) $(LDFLAGS) $(MOREFLAGS)
 
-OBJFILES = main.o heatshrink_encoder.o heatshrink_decoder.o
+OBJFILES = main3.o heatshrink_encoder.o heatshrink_decoder.o
 TARGET   = main
 
 default: all

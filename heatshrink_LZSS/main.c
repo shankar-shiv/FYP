@@ -1,219 +1,257 @@
 #include <stdint.h>
-#include <assert.h>
 #include <ctype.h>
-#include <stdlib.h>
 #include <stdio.h>
+#include <string.h>
+#include <time.h>
+#include <stdlib.h>
 
 #include "heatshrink_encoder.h"
 #include "heatshrink_decoder.h"
-#include "greatest.h"
-#include "debug.h"
 
-#define WINDOW_BITS 12
-#define LOOKAHEAD_BITS 6
-#define BUFFER_SIZE 2048
+// write some data into the compression buffer
+const uint8_t test_data[] = "9.739696383476257324e-01, 9.132320880889892578e-01, 8.655097484588623047e-01, 8.232104182243347168e-01, 7.462038993835449219e-01, 6.420824527740478516e-01, 5.477223396301269531e-01, 4.262472987174987793e-01, 3.253796100616455078e-01, 2.798264622688293457e-01, 2.288503199815750122e-01, 1.366594433784484863e-01, 4.772234335541725159e-02, 1.084598712623119354e-02, 1.008676812052726746e-01, 1.887201666831970215e-01, 2.277657240629196167e-01, 2.407809048891067505e-01, 2.570498883724212646e-01, 2.635574936866760254e-01, 2.939262390136718750e-01, 3.188720047473907471e-01, 3.492407798767089844e-01, 4.023861289024353027e-01, 4.392624795436859131e-01, 4.501084685325622559e-01, 4.620390534400939941e-01, 4.750542342662811279e-01, 4.891540110111236572e-01, 4.869848191738128662e-01, 5.075922012329101562e-01, 5.108459591865539551e-01, 5.303687453269958496e-01, 5.433839559555053711e-01, 5.694143176078796387e-01, 5.824295282363891602e-01, 6.084598898887634277e-01, 6.193058490753173828e-01, 6.420824527740478516e-01, 6.507592201232910156e-01, 6.583514213562011719e-01, 6.572667956352233887e-01, 6.550976037979125977e-01, 6.268980503082275391e-01, 6.214750409126281738e-01, 6.019522547721862793e-01, 5.824295282363891602e-01, 5.477223396301269531e-01, 5.227765440940856934e-01, 4.837310314178466797e-01, 4.707158207893371582e-01, 4.338394701480865479e-01, 4.175705015659332275e-01, 4.034707248210906982e-01, 3.926247358322143555e-01, 3.828633427619934082e-01, 3.828633427619934082e-01, 3.796095550060272217e-01, 3.839479386806488037e-01, 3.752711415290832520e-01, 3.687635660171508789e-01, 3.665943741798400879e-01, 3.676789700984954834e-01, 3.644251525402069092e-01, 3.698481619358062744e-01, 3.709327578544616699e-01, 3.698481619358062744e-01, 3.644251525402069092e-01, 3.752711415290832520e-01, 3.828633427619934082e-01, 3.872017264366149902e-01, 3.698481619358062744e-01, 3.861171305179595947e-01, 3.763557374477386475e-01, 3.796095550060272217e-01, 3.817787468433380127e-01, 3.839479386806488037e-01, 3.752711415290832520e-01, 3.817787468433380127e-01, 3.796095550060272217e-01, 3.731019496917724609e-01, 3.774403333663940430e-01, 3.861171305179595947e-01, 3.785249590873718262e-01, 3.882863223552703857e-01, 3.774403333663940430e-01, 3.828633427619934082e-01, 3.991323113441467285e-01, 3.969631195068359375e-01, 3.958785235881805420e-01, 4.305856823921203613e-01, 4.360086619853973389e-01, 4.479392766952514648e-01, 4.544468522071838379e-01, 4.598698616027832031e-01, 4.522776603698730469e-01, 4.642082452774047852e-01, 4.663774371147155762e-01, 4.587852358818054199e-01, 4.869848191738128662e-01, 7.809110879898071289e-01, 1.000000000000000000e+00, 9.598698616027832031e-01, 9.045553207397460938e-01, 8.427332043647766113e-01, 7.787418365478515625e-01, 7.071583271026611328e-01, 6.312364339828491211e-01, 5.260303616523742676e-01, 4.186550974845886230e-01, 3.145336210727691650e-01, 2.331887185573577881e-01, 2.049891501665115356e-01, 1.420824229717254639e-01, 6.399132311344146729e-02, 0.000000000000000000e+00, 9.978307783603668213e-02, 1.876355707645416260e-01, 2.386117130517959595e-01, 2.505423128604888916e-01, 2.678958773612976074e-01, 2.516269087791442871e-01, 0.000000000000000000e+00, 0.000000000000000000e+00, 0.000000000000000000e+00, 0.000000000000000000e+00, 0.000000000000000000e+00, 0.000000000000000000e+00, 0.000000000000000000e+00, 0.000000000000000000e+00, 0.000000000000000000e+00, 0.000000000000000000e+00, 0.000000000000000000e+00, 0.000000000000000000e+00, 0.000000000000000000e+00, 0.000000000000000000e+00, 0.000000000000000000e+00, 0.000000000000000000e+00, 0.000000000000000000e+00, 0.000000000000000000e+00, 0.000000000000000000e+00, 0.000000000000000000e+00, 0.000000000000000000e+00, 0.000000000000000000e+00, 0.000000000000000000e+00, 0.000000000000000000e+00, 0.000000000000000000e+00, 0.000000000000000000e+00, 0.000000000000000000e+00, 0.000000000000000000e+00, 0.000000000000000000e+00, 0.000000000000000000e+00, 0.000000000000000000e+00, 0.000000000000000000e+00, 0.000000000000000000e+00, 0.000000000000000000e+00, 0.000000000000000000e+00, 0.000000000000000000e+00, 0.000000000000000000e+00, 0.000000000000000000e+00, 0.000000000000000000e+00, 0.000000000000000000e+00, 0.000000000000000000e+00, 0.000000000000000000e+00, 0.000000000000000000e+00, 0.000000000000000000e+00, 0.000000000000000000e+00, 0.000000000000000000e+00, 0.000000000000000000e+00, 0.000000000000000000e+00, 0.000000000000000000e+00, 0.000000000000000000e+00, 0.000000000000000000e+00, 0.000000000000000000e+00, 0.000000000000000000e+00, 0.000000000000000000e+00, 0.000000000000000000e+00, 0.000000000000000000e+00, 0.000000000000000000e+00, 0.000000000000000000e+00, 0.000000000000000000e+00, 0.000000000000000000e+00, 0.000000000000000000e+00, 0.000000000000000000e+00, 0.000000000000000000e+00, 0.000000000000000000e+00, 0.000000000000000000e+00, 4.000000000000000000e+00";
 
-int main()
+#if HEATSHRINK_DYNAMIC_ALLOC
+#error HEATSHRINK_DYNAMIC_ALLOC must be false for static allocation test suite.
+#endif
+
+static void dump_buf(char *name, uint8_t *buf, uint16_t count)
 {
-    double input_data[] = {0.9779411554336548, 0.9264705777168274, 0.6813725233078003, 0.0, 0.0, 0.0, 0.0, 0.0};
-
-    size_t input_data_size = sizeof(input_data) - 1; // Subtract 1 to exclude the null terminator
-    debug(input_data_size);
-
-    // Allocate a heatshrink_encoder
-    heatshrink_encoder *hse = heatshrink_encoder_alloc(WINDOW_BITS, LOOKAHEAD_BITS);
-
-    if (hse == NULL)
+    for (int i = 0; i < count; i++)
     {
-        fprintf(stderr, "Failed to allocate the encoder\n");
-        return 1;
+        uint8_t c = (uint8_t)buf[i];
+        printf("%s %d: 0x%02x ('%c')\n", name, i, c, isprint(c) ? c : '.');
     }
+}
 
-    // An array to hold the compressed data
-    double compressed_data[BUFFER_SIZE];
+// Global variables
+static heatshrink_encoder hse;
+static heatshrink_decoder hsd;
 
-    // The offset in the input data where we are currently reading from
-    size_t input_offset = 0;
+// Function prototypes
+static void compress(uint8_t *input,
+                     uint32_t input_size,
+                     uint8_t *output,
+                     uint32_t output_size);
+static void decompress(uint8_t *input,
+                       uint32_t input_size,
+                       uint8_t *output,
+                       uint32_t output_size);
 
-    // The offset in the output data where we are currently writing to
-    size_t output_offset = 0;
+#define BUFFER_SIZE (sizeof(test_data) + (sizeof(test_data) / 2) + 4)
 
-    /*
-     * Repeat steps 2 and 3 to stream data through the state machine.
-     * Since it's doing data compression, the input and output sizes can vary significantly.
-     * Looping will be necessary to buffer the input and output as the data is processed.
-     */
-    while (input_offset < input_data_size)
+int main(int argc, char **argv)
+{
+    printf("Buffer sizes are %ld \n", BUFFER_SIZE); // 2260 for double
+
+    uint8_t orig_buffer[sizeof(test_data)];
+    uint8_t *comp_buffer = malloc(BUFFER_SIZE);
+    uint8_t *decomp_buffer = malloc(BUFFER_SIZE);
+
+    if (comp_buffer == NULL)
+        printf("malloc fail");
+    if (decomp_buffer == NULL)
+        printf("malloc fail");
+
+    size_t orig_size = sizeof(test_data); // strlen(test_data);
+    size_t comp_size = BUFFER_SIZE;       // this will get updated by reference
+    size_t decomp_size = BUFFER_SIZE;     // this will get updated by reference
+
+    memset(orig_buffer, 0, orig_size);     // zero out the buffer
+    memset(comp_buffer, 0, comp_size);     // zero out the buffer
+    memset(decomp_buffer, 0, decomp_size); // zero out the buffer
+
+    memcpy(orig_buffer, test_data, orig_size); // copy the test data into the buffer
+
+    clock_t tic = clock();
+    compress(test_data, orig_size, comp_buffer, comp_size);
+    clock_t toc = clock();
+    decompress(comp_buffer, comp_size, decomp_buffer, decomp_size);
+    clock_t toc_2 = clock();
+
+    printf("\nSize of orginal data: %ld \n", orig_size);
+
+    printf("\nSize of compressed data: %ld \n", sizeof(comp_buffer));
+
+    printf("Compression ratio: %f \n", (float)orig_size / sizeof(comp_buffer));
+
+    printf("\n Decompressed data: \n");
+    printf("%s \n", decomp_buffer);
+
+    // check each character from the original buffer against the decompressed buffer
+    for (int i = 0; i < orig_size; i++)
     {
-        size_t input_bytes_remaining = input_data_size - input_offset;
-        size_t output_bytes_free = BUFFER_SIZE - output_offset;
-
-        /**
-         * Determine the size of the input to be processed based on the amount of input bytes remaining and the amount of output bytes free.
-         * If there are fewer input bytes remaining than output bytes free, the input size is set to the remaining input bytes.
-         * Otherwise, the input size is set to the amount of output bytes free.
-         *
-         * @param input_bytes_remaining The number of input bytes remaining to be processed.
-         * @param output_bytes_free The number of output bytes free in the output buffer.
-         * @return The size of the input to be processed.
-         */
-        size_t input_size = (input_bytes_remaining < output_bytes_free) ? input_bytes_remaining : output_bytes_free;
-
-        size_t output_size = 0;
-        HSE_sink_res res = heatshrink_encoder_sink(hse, input_data + input_offset, input_size, &output_size);
-
-        if (res < 0)
+        if (orig_buffer[i] != decomp_buffer[i])
         {
-            fprintf(stderr, "Failed to sink data into encoder, the buffer is full\n");
-            return 1;
-        }
-
-        /**
-         * Increase the input offset by the input size.
-         */
-        input_offset += input_size;
-
-        size_t poll_size = 0;
-
-        /*
-         * HSE_poll_res heatshrink_encoder_poll(heatshrink_encoder *hse, uint8_t *out_buf, size_t out_buf_size, size_t *output_size)
-         * Poll for output from the encoder, copying at most OUT_BUF_SIZE bytes into
-         * OUT_BUF (setting *OUTPUT_SIZE to the actual amount copied).
-         */
-        HSE_poll_res poll_res = heatshrink_encoder_poll(hse, compressed_data + output_offset, output_bytes_free, &poll_size);
-
-        if (poll_res < 0)
-        {
-            fprintf(stderr, "Failed to poll data from encoder\n");
-            return 1;
-        }
-
-        output_offset += poll_size;
-    }
-
-    // Compression finished; call finish to generate any remaining output
-    size_t output_size = 0;
-    HSE_finish_res finish_res = heatshrink_encoder_finish(hse);
-
-    if (finish_res < 0)
-    {
-        fprintf(stderr, "Failed to finish encoding\n");
-        return 1;
-    }
-
-    if (finish_res > 0)
-    {
-        size_t output_bytes_free = BUFFER_SIZE - output_offset; // Define output_bytes_free here
-        // More output data to collect
-        HSE_poll_res poll_res = heatshrink_encoder_poll(hse, compressed_data + output_offset, output_bytes_free, &output_size);
-        if (poll_res < 0)
-        {
-            fprintf(stderr, "Failed to poll data from encoder\n");
-            return 1;
-        }
-        output_offset += output_size;
-    }
-
-    // Output the compressed data
-    printf("Compressed Data (%zu bytes):\n", output_offset);
-    for (size_t i = 0; i < output_offset; i++)
-    {
-        printf("%.16f ", compressed_data[i]);
-    }
-    printf("\n");
-
-    // Cleanup the encoder
-    heatshrink_encoder_free(hse);
-
-    // ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-    // Decoding
-    // ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
-    // Sample compressed data only for testing
-    // uint8_t compressed_data[] = {0xAA, 0x5A, 0x2D, 0x37, 0x39, 0x00, 0x00, 0x82, 0xB0, 0xC8, 0x2E, 0x76, 0x1B, 0x6D, 0xC2, 0xD9, 0x65, 0x90, 0x5A, 0x6D, 0xD7, 0x0B, 0xAD, 0xD2, 0x41, 0x64, 0xB0, 0xDD, 0x2C, 0x32, 0x0B, 0x35, 0xBE, 0xE5, 0x20, 0xB1, 0xDB, 0xED, 0xB7, 0x0B, 0x95, 0x96, 0xE7, 0x73, 0xB4, 0xDB, 0xED, 0xD2, 0xE0};
-    debug(output_offset);
-
-    double compressed_data_new[output_offset];
-
-    for (size_t i = 0; i < output_offset; i++)
-    {
-        compressed_data_new[i] = compressed_data[i];
-    }
-
-    size_t compressed_data_size = sizeof(compressed_data_new);
-
-    heatshrink_decoder *hsd = heatshrink_decoder_alloc(BUFFER_SIZE, WINDOW_BITS, LOOKAHEAD_BITS);
-
-    if (hsd == NULL)
-    {
-        fprintf(stderr, "Failed to allocate the decoder\n");
-        return 1;
-    }
-
-    double output_data[BUFFER_SIZE];
-    size_t input_offset_decompressed = 0;
-    size_t output_offset_decompressed = 0;
-
-    while (input_offset_decompressed < compressed_data_size)
-    {
-        size_t input_bytes_remaining = compressed_data_size - input_offset_decompressed;
-        size_t output_bytes_free = BUFFER_SIZE - output_offset_decompressed;
-
-        size_t input_size = (input_bytes_remaining < output_bytes_free) ? input_bytes_remaining : output_bytes_free;
-        size_t output_size = 0;
-
-        HSD_sink_res res = heatshrink_decoder_sink(hsd, compressed_data + input_offset_decompressed, input_size, &input_size);
-
-        if (res != HSDR_SINK_OK) // (enum <unnamed>)HSDR_SINK_OK = 0
-        {
-            fprintf(stderr, "Failed to sink data into decoder\n");
-            return 1;
-        }
-
-        input_offset_decompressed += input_size;
-
-        HSD_poll_res poll_res = heatshrink_decoder_poll(hsd, output_data + output_offset_decompressed, output_bytes_free, &output_size);
-
-        if (poll_res != HSDR_POLL_MORE) // (enum <unnamed>)HSDR_POLL_MORE = 1, more data remaining, call again w/ fresh output buffer
-        {
-            // Output is ready; you can process it
-            output_offset_decompressed += output_size;
+            printf("Error: original buffer does not match decompressed buffer \n");
+            printf("Original buffer: %c \n", orig_buffer[i]);
+            printf("Decompressed buffer: %c \n", decomp_buffer[i]);
         }
     }
 
-    // Finish decoding
-    HSD_finish_res finish_res_decompressed = heatshrink_decoder_finish(hsd);
-    debug(finish_res_decompressed);
+    printf("Time to compress: ");
+    printf("Elapsed: %f seconds\n", (double)(toc - tic) / CLOCKS_PER_SEC);
 
-    // if (finish_res_decompressed != HSDR_FINISH_DONE)
-    // {
-    //     fprintf(stderr, "Failed to finish decoding\n");
-    //     return 1;
-    // }
-
-    if (finish_res_decompressed > 0)
-    {
-        size_t output_bytes_free = BUFFER_SIZE - output_offset_decompressed; // Define output_bytes_free here
-        // More output data to collect
-        HSD_poll_res poll_res = heatshrink_decoder_poll(hsd, output_data + output_offset_decompressed, output_bytes_free, &output_size);
-        if (poll_res < 0)
-        {
-            fprintf(stderr, "Failed to poll data from encoder\n");
-            return 1;
-        }
-        output_offset_decompressed += output_size;
-    }
-
-    // Output the decoded data
-    printf("Decoded Data (%zu bytes):\n", output_offset_decompressed);
-    for (size_t i = 0; i < output_offset_decompressed; i++)
-    {
-        printf("%f,", output_data[i]);
-    }
-    printf("\n");
-
-    // Cleanup the decoder
-    heatshrink_decoder_free(hsd);
+    printf("Time to decompress: ");
+    printf("Elapsed: %f seconds\n", (double)(toc_2 - toc) / CLOCKS_PER_SEC);
+    free(comp_buffer);
+    free(decomp_buffer);
 
     return 0;
+}
+
+static void compress(uint8_t *input,
+                     uint32_t input_size,
+                     uint8_t *output,
+                     uint32_t output_size)
+{
+    heatshrink_encoder_reset(&hse);
+
+    printf("\n^^ COMPRESSING\n");
+
+    size_t count = 0;
+    uint32_t sunk = 0;
+    uint32_t polled = 0;
+
+    while (sunk < input_size)
+    {
+        // ASSERT(heatshrink_encoder_sink(&hse, &input[sunk], input_size - sunk, &count) >= 0);
+        if (heatshrink_encoder_sink(&hse, &input[sunk], input_size - sunk, &count) < 0)
+            printf("Error in heatshrink_encoder_sink \n");
+
+        sunk += count;
+
+        printf("^^ sunk %zd bytes \n", count);
+
+        if (sunk == input_size)
+        {
+            // ASSERT_EQ(HSER_FINISH_MORE, heatshrink_encoder_finish(&hse));
+            // heatshrink_encoder_finish(&hse);
+            if (heatshrink_encoder_finish(&hse) != HSER_FINISH_MORE)
+                printf("Error in heatshrink_encoder_finish \n");
+        }
+
+        HSE_poll_res pres;
+
+        do
+        { /* "turn the crank" */
+            pres = heatshrink_encoder_poll(&hse,
+                                           &output[polled],
+                                           output_size - polled,
+                                           &count);
+            // ASSERT(pres >= 0);
+            if (pres < 0)
+                printf("Error in heatshrink_encoder_poll \n");
+
+            polled += count;
+
+            printf("^^ polled %zd bytes \n", count);
+
+        } while (pres == HSER_POLL_MORE);
+
+        // ASSERT_EQ(HSER_POLL_EMPTY, pres);
+        if (HSER_POLL_EMPTY != pres)
+            printf("FAIL: HSER_POLL_EMPTY != pres \n");
+
+        if (polled >= output_size)
+        {
+            printf("compression should never expand that much \n");
+        }
+
+        if (sunk == input_size)
+        {
+            // ASSERT_EQ(HSER_FINISH_DONE, heatshrink_encoder_finish(&hse));
+            if (heatshrink_encoder_finish(&hse) != HSER_FINISH_DONE)
+                printf("Error in heatshrink_encoder_finish \n");
+            // heatshrink_encoder_finish(&hse);
+        }
+    }
+
+    printf("\n in: %u compressed: %u \n", input_size, polled);
+
+    // update the output size to the (smaller) compressed size
+    output_size = polled;
+
+    // reset the counters
+    sunk = 0;
+    polled = 0;
+}
+
+static void decompress(uint8_t *input,
+                       uint32_t input_size,
+                       uint8_t *output,
+                       uint32_t output_size)
+{
+    heatshrink_decoder_reset(&hsd);
+
+    printf("\n^^ DECOMPRESSING\n");
+
+    // reset the counters
+    size_t count = 0;
+    uint32_t sunk = 0;
+    uint32_t polled = 0;
+
+    while (sunk < input_size)
+    {
+        // ASSERT(heatshrink_decoder_sink(&hsd, &comp[sunk], input_size - sunk, &count) >= 0);
+        if (heatshrink_decoder_sink(&hsd, &input[sunk], input_size - sunk, &count) < 0)
+            printf("Error in heatshrink_decoder_sink \n");
+        // heatshrink_decoder_sink(&hsd, &input[sunk], input_size - sunk, &count);
+        sunk += count;
+
+        printf("^^ sunk %zd\n", count);
+
+        if (sunk == input_size)
+        {
+            // ASSERT_EQ(HSDR_FINISH_MORE, heatshrink_decoder_finish(&hsd));
+            if (heatshrink_decoder_finish(&hsd) != HSDR_FINISH_MORE)
+                printf("Error in heatshrink_decoder_finish \n");
+            // heatshrink_decoder_finish(&hsd);
+        }
+
+        HSD_poll_res pres;
+
+        do
+        {
+            pres = heatshrink_decoder_poll(&hsd, &output[polled],
+                                           output_size - polled, &count);
+            // ASSERT(pres >= 0);
+            if (pres < 0)
+                printf("Error in heatshrink_decoder_poll \n");
+            polled += count;
+
+            printf("^^ polled %zd\n", count);
+
+        } while (pres == HSDR_POLL_MORE);
+
+        // ASSERT_EQ(HSDR_POLL_EMPTY, pres);
+        if (HSDR_POLL_EMPTY != pres)
+            printf("FAIL: HSDR_POLL_EMPTY != pres \n");
+
+        if (sunk == input_size)
+        {
+            HSD_finish_res fres = heatshrink_decoder_finish(&hsd);
+            // ASSERT_EQ(HSDR_FINISH_DONE, fres);
+            if (HSDR_FINISH_DONE != fres)
+                printf("FAIL: HSDR_FINISH_DONE != fres \n");
+        }
+
+        // commented because the below if function doesnt make sense
+        // if (polled > sizeof(test_data))
+        // {
+
+        //     printf("Decompressed data is larger than original input");
+        // }
+    }
+
+    printf("decompressed: %u\n", polled);
+
+    // commented because the below if function doesnt make sense
+    // if (polled != sizeof(test_data))
+    // {
+    //     printf("Decompressed length does not match original input length");
+    // }
+
+    // update the output size
+    output_size = polled;
 }
