@@ -43,9 +43,6 @@
  * date is reconsidered.                                                         *
  *-------------------------------------------------------------------------------*
  * Instructions                                                                  *
- *                                                                               *
- * Here's what you should change to adjust the code to your needs:               *
- *                                                                               *
  * On panTompkins.h:                                                             *
  * - typedef int dataType;                                                       *
  * Change it from 'int' to whatever format your data is (float, unsigned int etc)*
