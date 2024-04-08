@@ -12,19 +12,13 @@
 #include <soc.h>
 #include "retained.h"
 #include <hal/nrf_gpio.h>
-#include <stdint.h>
 #include <stdlib.h>
 #include <string.h>
-#include <arm_math.h>
-#include <arm_const_structs.h>
-#include <math.h>
 #include <ram_pwrdn.h>
-#define sizeofbuffer 1024
-
 #define BUSY_WAIT_S 2U
 #define SLEEP_S 2U
 
-static const int16_t input_arry[] = {984, 984, 984, 984, 984, 984, 987, 986, 983, 983, 984, 979, 977, 976, 978, 977, 970, 973, 978, 980, 
+const short int input_arry[] = {984, 984, 984, 984, 984, 984, 987, 986, 983, 983, 984, 979, 977, 976, 978, 977, 970, 973, 978, 980, 
 979, 979, 979, 977, 972, 972, 972, 973, 972, 972, 974, 975, 971, 970, 972, 974, 975, 973, 975, 974, 
 973, 970, 974, 974, 974, 973, 976, 973, 972, 969, 968, 971, 971, 971, 974, 978, 978, 978, 979, 985, 
 989, 986, 979, 979, 978, 980, 979, 986, 996, 997, 992, 990, 988, 983, 979, 978, 996, 1008, 1037, 1121, 
@@ -22595,129 +22589,88 @@ static const int16_t input_arry[] = {984, 984, 984, 984, 984, 984, 987, 986, 983
 980, 980, 982, 985, 992, 995, 996, 1000, 1005, 1006, 1007, 1005, 1008, 1009, 1007, 1007, 1002, 1004, 1006, 1002, 
 1000, 998, 999, 994, 993, 993, 992, 989, 1013};
 
-static int32_t k = 0;
-static int32_t array_segment = 0;
-static int16_t num_segment = 451381 / 1024; //Change this depending on input
-static int16_t segmcounter = 0;
-static int16_t total_peaks = 0;
-
-//Parameters for the peak detector
-const int16_t threshold = 50;  // Adjust this threshold 
-const int16_t min_dist = 100;      // Adjust this minimum distance
-
-void calculate_gradient(int* data, int data_length, int* gradient_data) {
-    gradient_data[0] = data[1] - data[0];
-    for (int i = 1; i < data_length - 1; i++) {
-        gradient_data[i] = data[i + 1] - data[i - 1];
-    }
-    gradient_data[data_length - 1] = data[data_length - 1] - data[data_length - 2];
-}
-
-void preprocess_gradient(int* data, int data_length, float32_t* preprocess_data) {
-    for (int i = 0; i < data_length; i++) {
-        preprocess_data[2 * i] = data[i];
-        preprocess_data[2 * i + 1] = 0.0f;
-    }
-}
-
-void calculate_hilbert_absolute(float32_t* gradient_data, long int data_length, float32_t* hilbert_absolute) {
-    for (int i = 0; i < data_length; i++) {
-        hilbert_absolute[i] = sqrtf(gradient_data[2 * i] * gradient_data[2 * i] + gradient_data[2 * i + 1] * gradient_data[2 * i + 1]);
-    }
-}
-
-void arm_chilbert_f32(const arm_cfft_instance_f32* S, float32_t* p1) 
-{
-	uint32_t i, L;
-	
-	L = (S->fftLen);
-   
-	arm_cfft_f32(S, p1, 0, 1);
-
-	for(i = 0; i <= (L*2)-1; i += 2){
-		if(i == 0 || i == L) {}
-		else if(i <= L-2) {
-			p1[i] = 2 * p1[i];
-			p1[i+1] = 2 * p1[i+1];
-		}
-		else {
-			p1[i] = 0;
-			p1[i+1] = 0;
-		}
-	}
-
-	arm_cfft_f32(S, p1, 1, 1);
-}
-
-int find_peaks(float32_t* data, int num_found, int data_length, double threshold, int min_dist, int* peak_indices, int* num_peaks) {
-
-    for (int i = 1; i < data_length - 1; i++) {
-        if (data[i] > data[i - 1] && data[i] > data[i + 1] && data[i] > threshold) {
-            if (num_found == 0 || i - peak_indices[num_found - 1] >= min_dist) {
-                peak_indices[num_found] = i;
-                num_found++;
-            }
-        }
-    }
-    return num_found;
-}
-
+int filter, time=0, slopecrit, sign, maxslope=0, nsig, nslope=0,
+        qtime, maxtime, t0, t1, t2, t3, t4, t5, t6, t7, t8, t9;
+int s2 = 500;
+int scmin = 200;
+int scmax = 2000;
+int ms160 = 40;
+int ms200 = 50;  
+int temp, t, found, counter =0, counter1 = 0;
+int output_arry[5000];
 int main(void)
 {
 
-	/* Configure to generate PORT event (wakeup) on button 1 press. */
+	// Configure to generate PORT event (wakeup) on button 1 press. 
 	nrf_gpio_cfg_input(NRF_DT_GPIOS_TO_PSEL(DT_ALIAS(sw0), gpios),
 			   NRF_GPIO_PIN_PULLUP);
 	nrf_gpio_cfg_sense_set(NRF_DT_GPIOS_TO_PSEL(DT_ALIAS(sw0), gpios),
 			       NRF_GPIO_PIN_SENSE_LOW);
 
-	
-	/////////////////////////////////////////////////////////////////////////////
-	static int peak_indices[5000]; // Assuming a maximum of 5000 peaks
-    static int num_found = 0;
-    
-    do{
+//////////////////////////////////////////////////////////////////////
 
-        static int segm_data[sizeofbuffer];
-        int chunk_size = array_segment + sizeofbuffer;
-        for (int j = 0; j < sizeofbuffer; j++) {
-            segm_data[j] = input_arry[array_segment + j];
-            //printf("%d\n", segm_data[j]);
+   t9 = t8 = t7 = t6 = t5 = t4 = t3 = t2 = t1 = input_arry[0]; // v[0] contains channel 1 signal, v[1] contains channel 2 signal
+
+    do {
+        
+        filter = (t0 = input_arry[counter]) + 4*t1 + 6*t2 + 4*t3 + t4
+                - t5         - 4*t6 - 6*t7 - 4*t8 - t9;
+        
+      
+    
+        //printf("This is s2: %d\n", s2); // This value is 500
+        //printf("This is scmin: %d\n", scmin); //This value is 200
+        //printf("This is scmax: %d\n", scmax); // THis value is 2000
+        if (time % s2 == 0) {
+            if (nslope == 0) {
+                slopecrit -= slopecrit >> 4;
+                if (slopecrit < scmin) slopecrit = scmin;
+            }
+            else if (nslope >= 5) {
+                slopecrit += slopecrit >> 4;
+                if (slopecrit > scmax) slopecrit = scmax;
+            }
         }
-    
-        // 1) Calculate gradient
-        static int gradient_data[sizeofbuffer];
-        calculate_gradient(segm_data,sizeofbuffer,gradient_data);
-        
-        
-        // 2) Pad the data with 0 for every odd numbered elements to represent imag numbers
-        static float32_t padded_data[sizeofbuffer*2];
-        preprocess_gradient(gradient_data, sizeofbuffer,padded_data);
-        
-        // 3) Perform hilbert transform on the gradient
-        arm_chilbert_f32(&arm_cfft_sR_f32_len1024, padded_data); //Rmb to change the first arg based on input size
-        
-        // 4) Need to find the absolute values of the complex number in data_samples
-        static float32_t abs_data[sizeofbuffer];
-        calculate_hilbert_absolute(padded_data, sizeofbuffer, abs_data);
-        //printf("abs value: %f\n",abs_data[0]);
+        if (nslope == 0 && abs(filter) > slopecrit) {
+            nslope = 1; maxtime = ms160;
+            sign = (filter > 0) ? 1 : -1;
+            qtime = time;
+        }
+        if (nslope != 0) {
+            if (filter * sign < -slopecrit) {
+                sign = -sign;
+                maxtime = (++nslope > 4) ? ms200 : ms160;
+            }
+            else if (filter * sign > slopecrit &&
+                     abs(filter) > maxslope)
+                maxslope = abs(filter);
+            if (maxtime-- < 0) {
+                if (2 <= nslope && nslope <= 4) {
+                    slopecrit += ((maxslope>>2) - slopecrit) >> 3;
+                    if (slopecrit < scmin) slopecrit = scmin;
+                    else if (slopecrit > scmax) slopecrit = scmax;
+                    //temp = strtim("i"); //This corresponds to which sample is on currently.
+                    //found =  temp - (time - qtime) - 4;
+                    //printf("QRS found:  %ld\n", found);
+                    output_arry[counter1] = counter;
+                    counter1++;
+                    time = 0;
+                }
+                else if (nslope >= 5) {
+                //Artifact detected
+                }
+                nslope = 0;
+            }
+        }
+        t9 = t8; t8 = t7; t7 = t6; t6 = t5; t5 = t4;
+        t4 = t3; t3 = t2; t2 = t1; t1 = t0; time++; counter++;
+        //printf("Current sample: %ld \n", counter);
+        //printf("-----\n");
 
-        // 5) Find peaks from the abs values
-        
-        static int num_peaks;
-        int val;
-        val = find_peaks(abs_data,num_found, sizeofbuffer, threshold, min_dist, peak_indices, &num_peaks);
-        total_peaks += val;
-        
-        
-        
-        array_segment += sizeofbuffer;
-        k = 0;
-        segmcounter++;
-        //printf("seg: %d\n",segmcounter);
-    }while(segmcounter < num_segment);
-    printf("%d\n", total_peaks);
-	//////////////////////////////////////////////////////////////////////////////
+    } while (counter < 451390); //Total number of samples is 451389. Should correspond to about 250hz sampling.
+    printf("Number of peaks: %ld\n", counter1);
+
+//////////////////////////////////////////////////////////////////////
 	printk("Entering system off; press BUTTON1 to restart\n");
 
 	sys_poweroff();
